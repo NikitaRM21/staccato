@@ -30,8 +30,17 @@
 ################################################################################
 
 Installation Instructions for STACCATO
+You have to specify location of your CUDD `include` dirrectory in CMakeLists.txt
+As static library: 
+$> cmake . -DBUILD_SHARED_LIBS=OFF
 $> make
-$> make test (edit the CUDD and DSD library paths)
+
+As shared library:
+Make sure that you have built CUDD as a shared library and that
+it is installed in /usr/local/lib/libcudd.so or to another location specified
+by using the CUDD_DIR environment variable.
+$> cmake . -DBUILD_SHARED_LIBS=ON
+$> make
 
 
 Dependencies:
