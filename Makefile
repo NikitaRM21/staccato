@@ -33,31 +33,38 @@
 BUILD_TYPE ?= static
 
 ifeq ($(BUILD_TYPE), static)
-LIB      = lib/libdsd.a
+    LIB = lib/libdsd.a
 else
-LIB      = libdsd.so
+    LIB = libSTACCATO.so
 endif
 
-SRC      = $(shell ls src/*.c)
-OBJ      = $(SRC:%.c=%.o)
+SRC = $(shell ls src/*.c)
+OBJ = $(SRC:%.c=%.o)
 
 CUDD_INC = -I$(CUDD_INCLUDE_PATH)
 
 ifeq ($(BUILD_TYPE), static)
-CFLAGS   = -c -O3 -funroll-all-loops $(CUDD_INC)
+	CFLAGS	= -c -O3 -funroll-all-loops $(CUDD_INC)
 else
-CFLAGS   = -c -O3 -funroll-all-loops -fPIC $(CUDD_INC)
+	CFLAGS	= -c -O3 -funroll-all-loops -fPIC $(CUDD_INC)
 endif
 
-CC       = g++
+# Determining the path to the libcudd.so library
+ifeq ($(CUDD_DIR),)
+    CUDD_LIBRARY_PATH = /usr/local/lib
+else
+    CUDD_LIBRARY_PATH = $(CUDD_DIR)
+endif
+
+CC = g++
 
 ifeq ($(BUILD_TYPE), static)
 $(LIB): $(OBJ)
 	@mkdir -p lib
 	ar rv $(LIB) $(OBJ)
 else
-$(LIB): $(OBJ)
-	$(CC) -shared -o $(LIB) $(OBJ)
+$(LIB): $(OBJ) $(CUDD_LIBRARY_PATH)/libcudd.so
+	$(CC) -shared -o $(LIB) $(OBJ) -L$(CUDD_LIBRARY_PATH) -lcudd
 endif
 
 clean:
