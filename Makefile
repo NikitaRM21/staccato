@@ -29,55 +29,55 @@
 #   Ann Arbor, MI 48109-2121                                                   #
 ################################################################################
 
-cmake_minimum_required(VERSION 3.13)
-project(STACCATO)
+# Build static library by default
+BUILD_TYPE ?= static
 
-set(SRCS
-    src/DSDDecompose.c
-    src/DSDInterface.c
-    src/DSDManager.c
-    src/DSDManipulations.c
-    src/DSDNewDecompose.c
-    src/DSDOrDecompose.c
-    src/DSDPrimeDecompose.c
-    src/DSDUtilities.c
-    src/DSDXorDecompose.c
-    src/fixheap.c
-)
+ifeq ($(BUILD_TYPE), static)
+LIB      = lib/libdsd.a
+else
+LIB      = libdsd.so
+endif
 
-add_compile_options(-O3 -funroll-all-loops)
+SRC      = $(shell ls src/*.c)
+OBJ      = $(SRC:%.c=%.o)
 
-option(BUILD_SHARED_LIBS "Build shared libraries (ON) or static libraries (OFF)" OFF)
-option(CUDD_INCLUDE_PATH "Path to CUDD include directory")
+CUDD_INC = -I$(CUDD_INCLUDE_PATH)
 
-# Check if building library is shared 
-if(BUILD_SHARED_LIBS)
-        add_library(STACCATO SHARED ${SRCS})
+ifeq ($(BUILD_TYPE), static)
+CFLAGS   = -c -O3 -funroll-all-loops $(CUDD_INC)
+else
+CFLAGS   = -c -O3 -funroll-all-loops -fPIC $(CUDD_INC)
+endif
 
-        if(DEFINED ENV{CUDD_DIR})
-            set(CUDD_LIBRARY_PATH "$ENV{CUDD_DIR}/libcudd.so")
-        else()
-            set(CUDD_LIBRARY_PATH "/usr/local/lib/libcudd.so")
-        endif()
+CC       = g++
 
-        target_link_libraries(STACCATO PUBLIC ${CUDD_LIBRARY_PATH})
-    
-else()
-    add_library(STACCATO STATIC ${SRCS})
-endif()
+ifeq ($(BUILD_TYPE), static)
+$(LIB): $(OBJ)
+	@mkdir -p lib
+	ar rv $(LIB) $(OBJ)
+else
+$(LIB): $(OBJ)
+	$(CC) -shared -o $(LIB) $(OBJ)
+endif
 
-if(CUDD_INCLUDE_PATH)
-    target_include_directories(STACCATO
-        PUBLIC
-        ${CUDD_INCLUDE_PATH}
-    )
-else()
-    message(FATAL_ERROR "You must specify the path to the CUDD include directory. Use -DCUDD_INCLUDE_PATH=/path/to/your/cudd/include")
-endif()
+clean:
+	rm -rf $(OBJ) $(LIB) sample
 
-# Custom target for clean
-add_custom_target(cleaning
-    COMMAND rm -f ${CMAKE_CURRENT_SOURCE_DIR}/libSTACCATO.a
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    COMMENT "Cleaning libSTACCATO.a"
-)
+.PHONY: test clean
+
+# To compile the program as mentioned in STACCATO Code Example
+CUDD_LIB = -L/path/to/cudd-2.4.2/cudd
+EPD_LIB = -L/path/to/cudd-2.4.2/epd
+ST_LIB = -L/path/to/cudd-2.4.2/st
+UTIL_LIB = -L/path/to/cudd-2.4.2/util
+MTR_LIB = -L/path/to/cudd-2.4.2/mtr
+DSD_LIB = -L/path/to/STACCATO-1.2/lib
+
+test:
+	$(CC) src/sample.c $(CUDD_LIB) $(MTR_LIB) $(ST_LIB) $(EPD_LIB) $(UTIL_LIB) $(DSD_LIB) \
+	-lcudd -lmtr -lst -lepd -lutil -ldsd $(CUDD_INC) -o sample
+	
+	
+	
+	
+	
